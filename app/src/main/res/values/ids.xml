@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="item_icon" type="id" />
+    <item name="tvSettingsTitle" type="id" />
+    <item name="tvNotification" type="id" />
+    <item name="switchNotification" type="id" />
+    <item name="tvDarkTheme" type="id" />
+    <item name="switchDarkTheme" type="id" />
+    <item name="tvLanguage" type="id" />
+    <item name="spinnerLanguage" type="id" />
 </resources>

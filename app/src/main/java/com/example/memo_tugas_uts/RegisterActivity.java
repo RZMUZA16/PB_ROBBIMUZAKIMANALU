@@ -1,31 +1,37 @@
 package com.example.memo_tugas_uts;
-
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.textfield.TextInputEditText;
-
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import java.util.Calendar;
 
 public class RegisterActivity extends AppCompatActivity {
 
     private TextInputEditText etBirthDate;
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // Inisialisasi view
+        // Firebase instance
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference("users");
+
         etBirthDate = findViewById(R.id.etBirthDate);
         Button btnRegister = findViewById(R.id.btnRegister);
         TextView btnLogin = findViewById(R.id.btnLogin);
@@ -34,16 +40,12 @@ public class RegisterActivity extends AppCompatActivity {
 
         btnRegister.setOnClickListener(v -> {
             if (validateForm()) {
-
-                Intent intent = new Intent(RegisterActivity.this, DashboardActivity.class);
-                startActivity(intent);
-                finish();
+                registerUser();
             }
         });
 
         btnLogin.setOnClickListener(v -> {
-            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
             finish();
         });
     }
@@ -102,5 +104,44 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    private void registerUser() {
+        TextInputEditText etFullName = findViewById(R.id.etFullName);
+        TextInputEditText etEmail = findViewById(R.id.etEmail);
+        TextInputEditText etPassword = findViewById(R.id.etPassword);
+        TextInputEditText etLocation = findViewById(R.id.etLocation);
+        RadioGroup rgGender = findViewById(R.id.rgGender);
+
+        String fullName = etFullName.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+        String birthDate = etBirthDate.getText().toString().trim();
+        String location = etLocation.getText().toString().trim();
+        String gender = ((RadioButton) findViewById(rgGender.getCheckedRadioButtonId())).getText().toString();
+
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            String uid = firebaseUser.getUid();
+                            com.example.model.memo_tugas_uts.User user = new com.example.model.memo_tugas_uts.User(fullName, email, password, birthDate, gender, location);
+
+                            mDatabase.child(uid).setValue(user)
+                                    .addOnCompleteListener(task1 -> {
+                                        if (task1.isSuccessful()) {
+                                            Toast.makeText(this, "Registrasi berhasil!", Toast.LENGTH_SHORT).show();
+                                            startActivity(new Intent(this, DashboardActivity.class));
+                                            finish();
+                                        } else {
+                                            Toast.makeText(this, "Gagal simpan data: " + task1.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        }
+                    } else {
+                        Toast.makeText(this, "Registrasi gagal: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }
